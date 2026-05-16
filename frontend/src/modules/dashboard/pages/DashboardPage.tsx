@@ -23,8 +23,31 @@ import {
   Edit3
 } from "lucide-react";
 import { motion } from "framer-motion";
+import FocusTimer from "../../focus/components/FocusTimer";
+import { PresenceBar } from "../../companion/engine/components/PresenceBar";
+import {
+  useDashboardData
+} from "../hooks/useDashboardData";
 
 export default function DashboardPage() {
+  const {
+    sessions,
+    loading,
+    totalMinutes,
+    totalSessions,
+    streak,
+    focusScore,
+    topSubject,
+    companionInsight
+  } = useDashboardData();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#070712] text-white flex items-center justify-center">
+        Loading dashboard...
+      </div>
+    );
+  }
   return (
     <div className="flex h-screen bg-[#070712] text-white font-sans overflow-hidden">
       
@@ -63,7 +86,7 @@ export default function DashboardPage() {
             <div className="flex items-center gap-3 mb-4">
               <div className="text-xl">🔥</div>
               <div>
-                <p className="text-[13px] font-semibold text-white">7 Day Streak</p>
+                <p className="text-[13px] font-semibold text-white">{streak} Day Streak</p>
                 <p className="text-[11px] text-gray-400">Keep it up! 🔥</p>
               </div>
             </div>
@@ -150,26 +173,12 @@ export default function DashboardPage() {
                     <button className="bg-white/5 hover:bg-white/10 p-1.5 rounded-full transition text-gray-400"><Edit3 size={12} /></button>
                   </div>
                   
-                  <h2 className="text-[72px] font-bold text-white leading-none mb-6 tracking-tighter">50:00</h2>
-                  
-                  <div className="flex gap-3 mb-8">
-                    <div className="flex items-center gap-1.5 bg-white/5 backdrop-blur-md border border-white/5 px-3 py-1.5 rounded-full text-[12px] text-gray-300">
-                      <span className="text-green-400">🍃</span> No Breaks
-                    </div>
-                    <div className="flex items-center gap-1.5 bg-white/5 backdrop-blur-md border border-white/5 px-3 py-1.5 rounded-full text-[12px] text-gray-300">
-                      <span className="text-purple-400">🎵</span> Lo-fi Beats
-                    </div>
-                  </div>
+                  <FocusTimer />
                 </div>
 
                 <div className="flex justify-between items-end">
-                  <motion.button 
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="bg-white text-black px-6 py-3.5 rounded-xl font-bold text-[14px] flex items-center gap-2 hover:bg-gray-100 transition"
-                  >
-                    <Play size={16} fill="currentColor" /> Start Focus
-                  </motion.button>
+                  {/* The buttons were moved into FocusTimer, so we just need a spacer or we can place the session ring correctly */}
+                  <div></div>
 
                   <div className="flex flex-col items-center mr-16">
                     <p className="text-[12px] text-gray-400 mb-3">Today's Goal</p>
@@ -198,10 +207,10 @@ export default function DashboardPage() {
               </div>
 
               <div className="grid grid-cols-2 gap-px bg-white/5 flex-1 rounded-2xl overflow-hidden border border-white/5">
-                <StatCell icon={<Clock size={16} className="text-indigo-400" />} label="Study Time" value="15h 30m" trend="↑ 12%" />
-                <StatCell icon={<Target size={16} className="text-orange-400" />} label="Focus Score" value="82%" trend="↑ 8%" />
-                <StatCell icon={<CalendarDays size={16} className="text-blue-400" />} label="Sessions" value="18" trend="↑ 3" />
-                <StatCell icon={<Flame size={16} className="text-rose-400" />} label="Longest Streak" value="7 days" sub="Keep going! 🔥" />
+                <StatCell icon={<Clock size={16} className="text-indigo-400" />} label="Study Time" value={`${totalMinutes}m`} trend="↑ 12%" />
+                <StatCell icon={<Target size={16} className="text-orange-400" />} label="Focus Score" value={`${focusScore}%`} trend="↑ 8%" />
+                <StatCell icon={<CalendarDays size={16} className="text-blue-400" />} label="Sessions" value={totalSessions} trend="↑ 3" />
+                <StatCell icon={<Flame size={16} className="text-rose-400" />} label="Streak" value={`${streak} days`} sub="Keep going! 🔥" />
               </div>
             </div>
           </div>
@@ -217,27 +226,18 @@ export default function DashboardPage() {
               </div>
 
               <div className="space-y-2">
-                <SessionRow 
-                  icon={<BookOpen size={16} className="text-indigo-400" />} 
-                  iconBg="bg-indigo-500/10"
-                  title="Operating Systems" type="Deep Focus" 
-                  time="9:00 AM - 9:50 AM" duration="50 min" 
-                  completed={true} 
-                />
-                <SessionRow 
-                  icon={<Code size={16} className="text-blue-400" />} 
-                  iconBg="bg-blue-500/10"
-                  title="Data Structures" type="Deep Focus" 
-                  time="11:00 AM - 11:50 AM" duration="50 min" 
-                  completed={true} 
-                />
-                <SessionRow 
-                  icon={<SquareSigma size={16} className="text-amber-400" />} 
-                  iconBg="bg-amber-500/10"
-                  title="Discrete Mathematics" type="Deep Focus" 
-                  time="2:00 PM - 2:50 PM" duration="50 min" 
-                  completed={true} 
-                />
+                {sessions.map((session: any) => (
+                  <SessionRow 
+                    key={session.id}
+                    icon={<BookOpen size={16} className="text-indigo-400" />} 
+                    iconBg="bg-indigo-500/10"
+                    title={session.subject} 
+                    type="Deep Focus" 
+                    time={new Date(session.created_at || Date.now()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} 
+                    duration={`${session.duration} min`} 
+                    completed={true} 
+                  />
+                ))}
                 
                 {/* Add New Session Button */}
                 <div className="mt-4 flex items-center justify-between p-4 rounded-2xl border border-dashed border-white/10 hover:border-indigo-500/50 hover:bg-white/[0.02] transition cursor-pointer group">
@@ -258,7 +258,7 @@ export default function DashboardPage() {
             </div>
 
             {/* AI Companion (Span 1) */}
-            <div className="xl:col-span-1 bg-[#0c0d1a] border border-white/5 rounded-[24px] p-6 relative overflow-hidden flex flex-col">
+            <div className="xl:col-span-1 bg-gradient-to-br from-[#1b2232] to-[#111827] border border-white/10 shadow-2xl shadow-blue-500/10 rounded-[24px] p-6 relative overflow-hidden flex flex-col">
               <div className="absolute bottom-0 right-0 w-64 h-64 bg-cover bg-center pointer-events-none opacity-90" style={{ backgroundImage: "url('/ai-robot.png')" }} />
               
               <div className="flex justify-between items-center mb-6 relative z-10">
@@ -271,11 +271,8 @@ export default function DashboardPage() {
 
               <div className="bg-[#121427]/90 backdrop-blur-sm border border-white/5 rounded-2xl p-5 mb-8 relative z-10 w-[85%] shadow-xl shadow-black/20">
                 <div className="absolute top-1/2 -right-2 w-4 h-4 bg-[#121427] border-t border-r border-white/5 transform rotate-45 -translate-y-1/2" />
-                <p className="text-[13px] text-gray-200 leading-relaxed mb-3">
-                  You're most productive between <span className="text-white font-semibold">9 AM - 12 PM</span>.
-                </p>
-                <p className="text-[12px] text-gray-400 leading-relaxed">
-                  Consider scheduling your hardest subjects in this window.
+                <p className="text-[13px] text-gray-300 leading-relaxed whitespace-pre-line">
+                  {companionInsight}
                 </p>
               </div>
 
@@ -285,7 +282,7 @@ export default function DashboardPage() {
                 </button>
               </div>
             </div>
-
+            <PresenceBar />
           </div>
 
           {/* BOTTOM ROW: Quote */}
