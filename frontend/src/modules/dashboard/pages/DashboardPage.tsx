@@ -23,23 +23,42 @@ import {
   Edit3
 } from "lucide-react";
 import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
 import FocusTimer from "../../focus/components/FocusTimer";
 import { PresenceBar } from "../../companion/engine/components/PresenceBar";
 import {
   useDashboardData
 } from "../hooks/useDashboardData";
 
+const DAILY_GOAL = 6;
+
+function timeGreeting() {
+  const hour = new Date().getHours();
+  if (hour < 5) return "Burning the midnight oil";
+  if (hour < 12) return "Good morning";
+  if (hour < 17) return "Good afternoon";
+  return "Good evening";
+}
+
 export default function DashboardPage() {
   const {
     sessions,
+    user,
     loading,
     totalMinutes,
     totalSessions,
+    todaySessions,
     streak,
     focusScore,
     topSubject,
-    companionInsight
+    companionInsight,
+    productiveHour,
+    consistencyLevel
   } = useDashboardData();
+
+  const displayName = user?.username ?? "there";
+  const goalDone = Math.min(todaySessions.length, DAILY_GOAL);
+  const goalRingOffset = 226 - (226 * goalDone) / DAILY_GOAL;
 
   if (loading) {
     return (
@@ -70,13 +89,13 @@ export default function DashboardPage() {
           <div className="my-4 border-t border-white/5 mx-2" />
           <NavItem icon={<BarChart2 size={18} />} label="Analytics" />
           <NavItem icon={<Sparkles size={18} />} label="Insights" />
-          <div className="flex items-center justify-between px-3 py-2.5 rounded-xl text-gray-400 hover:text-white hover:bg-white/5 cursor-pointer transition">
+          <Link to="/companion" className="flex items-center justify-between px-3 py-2.5 rounded-xl text-gray-400 hover:text-white hover:bg-white/5 cursor-pointer transition">
             <div className="flex items-center gap-3">
               <MessageSquare size={18} />
               <span className="text-[13px] font-medium">Companion</span>
             </div>
             <span className="text-[10px] font-bold bg-indigo-500/20 text-indigo-400 px-1.5 py-0.5 rounded-md">AI</span>
-          </div>
+          </Link>
           <NavItem icon={<Settings size={18} />} label="Settings" />
         </nav>
 
@@ -112,8 +131,8 @@ export default function DashboardPage() {
               <img src="https://i.pravatar.cc/150?u=a042581f4e29026704d" alt="Profile" className="w-full h-full object-cover" />
             </div>
             <div className="flex-1">
-              <p className="text-[13px] font-semibold text-white leading-tight">Kshitij</p>
-              <p className="text-[11px] text-indigo-400">Pro Plan</p>
+              <p className="text-[13px] font-semibold text-white leading-tight">{displayName}</p>
+              <p className="text-[11px] text-indigo-400">{user?.email ?? ""}</p>
             </div>
             <ChevronDown size={14} className="text-gray-500" />
           </div>
@@ -127,7 +146,7 @@ export default function DashboardPage() {
         <header className="px-8 py-7 flex justify-between items-end shrink-0">
           <div>
             <h1 className="text-[28px] font-bold text-white mb-1.5 tracking-tight flex items-center gap-2">
-              Good evening, Kshitij <span className="text-2xl">👋</span>
+              {timeGreeting()}, {displayName} <span className="text-2xl">👋</span>
             </h1>
             <p className="text-[14px] text-gray-400">
               Stay consistent. Stay focused. Your future self is grateful.
@@ -185,10 +204,10 @@ export default function DashboardPage() {
                     <div className="relative w-20 h-20 flex items-center justify-center">
                       <svg className="w-full h-full transform -rotate-90">
                         <circle cx="40" cy="40" r="36" fill="transparent" stroke="rgba(255,255,255,0.05)" strokeWidth="6" />
-                        <circle cx="40" cy="40" r="36" fill="transparent" stroke="#6366f1" strokeWidth="6" strokeDasharray="226" strokeDashoffset="113" strokeLinecap="round" />
+                        <circle cx="40" cy="40" r="36" fill="transparent" stroke="#6366f1" strokeWidth="6" strokeDasharray="226" strokeDashoffset={goalRingOffset} strokeLinecap="round" />
                       </svg>
                       <div className="absolute inset-0 flex items-center justify-center">
-                        <span className="text-xl font-bold text-white">3<span className="text-gray-500">/6</span></span>
+                        <span className="text-xl font-bold text-white">{goalDone}<span className="text-gray-500">/{DAILY_GOAL}</span></span>
                       </div>
                     </div>
                     <p className="text-[11px] text-gray-400 mt-3">Sessions Completed</p>
@@ -226,16 +245,21 @@ export default function DashboardPage() {
               </div>
 
               <div className="space-y-2">
-                {sessions.map((session: any) => (
-                  <SessionRow 
+                {todaySessions.length === 0 && (
+                  <p className="text-[13px] text-gray-500 px-2 py-4">
+                    No sessions yet today. Your streak is waiting.
+                  </p>
+                )}
+                {todaySessions.map((session: any) => (
+                  <SessionRow
                     key={session.id}
-                    icon={<BookOpen size={16} className="text-indigo-400" />} 
+                    icon={<BookOpen size={16} className="text-indigo-400" />}
                     iconBg="bg-indigo-500/10"
-                    title={session.subject} 
-                    type="Deep Focus" 
-                    time={new Date(session.created_at || Date.now()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} 
-                    duration={`${session.duration} min`} 
-                    completed={true} 
+                    title={session.subject}
+                    type="Deep Focus"
+                    time={new Date(session.started_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                    duration={`${session.duration} min`}
+                    completed={session.completed}
                   />
                 ))}
                 
@@ -277,12 +301,35 @@ export default function DashboardPage() {
               </div>
 
               <div className="mt-auto relative z-10">
-                <button className="flex items-center gap-2 text-indigo-400 text-[13px] font-medium hover:text-indigo-300 transition bg-indigo-500/10 px-4 py-2 rounded-xl border border-indigo-500/20">
-                  View Full Insight <ArrowRight size={14} />
-                </button>
+                <Link to="/companion" className="inline-flex items-center gap-2 text-indigo-400 text-[13px] font-medium hover:text-indigo-300 transition bg-indigo-500/10 px-4 py-2 rounded-xl border border-indigo-500/20">
+                  Chat with Companion <ArrowRight size={14} />
+                </Link>
               </div>
             </div>
             <PresenceBar />
+          </div>
+
+          {/* ADAPTIVE INTELLIGENCE ROW */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="bg-[#0c0d1a] border border-white/5 rounded-[24px] p-6 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-3xl" />
+              <p className="text-gray-400 mb-2 text-[13px] font-medium flex items-center gap-2">
+                <Sparkles size={14} className="text-indigo-400"/> Peak Focus Hour
+              </p>
+              <h2 className="text-4xl font-bold text-white tracking-tight">
+                {productiveHour !== null ? `${productiveHour}:00` : "--"}
+              </h2>
+            </div>
+
+            <div className="bg-[#0c0d1a] border border-white/5 rounded-[24px] p-6 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl" />
+              <p className="text-gray-400 mb-2 text-[13px] font-medium flex items-center gap-2">
+                <Target size={14} className="text-blue-400"/> Consistency Profile
+              </p>
+              <h2 className="text-3xl font-bold text-white tracking-tight">
+                {consistencyLevel}
+              </h2>
+            </div>
           </div>
 
           {/* BOTTOM ROW: Quote */}

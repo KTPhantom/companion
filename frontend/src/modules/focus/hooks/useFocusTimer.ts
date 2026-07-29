@@ -1,73 +1,58 @@
 import { useEffect } from "react";
 
-import {
-  useFocusStore
-} from "../store/focusStore";
-
-import {
-  createSession
-} from "../services/focusService";
+import { useFocusStore } from "../store/focusStore";
+import { createSession } from "../services/focusService";
 
 export const useFocusTimer = () => {
-
   const {
-
     isRunning,
     timeLeft,
+    totalTime,
+    sessionType,
+    interruptions,
     tick,
-    resetTimer,
+    startBreak,
+    startFocus,
     subject
-
   } = useFocusStore();
 
   useEffect(() => {
-
     if (!isRunning) return;
 
     const interval = setInterval(async () => {
-
       if (timeLeft <= 1) {
-
         clearInterval(interval);
 
-        try {
-
-          const token =
-            localStorage.getItem("token");
-
-          if (token) {
-
-            await createSession(
-              token,
-              subject,
-              50
-            );
+        if (sessionType === "focus") {
+          try {
+            // Record what actually happened: real duration and a focus
+            // score derived from interruptions (each pause costs 15 points).
+            const minutes = Math.max(1, Math.round(totalTime / 60));
+            const focusScore = Math.max(20, 100 - interruptions * 15);
+            await createSession(subject, minutes, focusScore);
+          } catch (error) {
+            console.error("Session save failed", error);
           }
-
-        } catch (error) {
-
-          console.error(
-            "Session save failed",
-            error
-          );
+          startBreak();
+        } else {
+          startFocus();
         }
-
-        resetTimer();
-
         return;
       }
 
       tick();
-
     }, 1000);
 
     return () => clearInterval(interval);
-
   }, [
     isRunning,
     timeLeft,
+    totalTime,
+    sessionType,
+    interruptions,
     tick,
-    resetTimer,
+    startBreak,
+    startFocus,
     subject
   ]);
 };

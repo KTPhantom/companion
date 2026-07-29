@@ -9,6 +9,8 @@ export default function FocusTimer() {
   const {
     timeLeft,
     isRunning,
+    sessionType,
+    interruptions,
     startTimer,
     pauseTimer,
     resetTimer
@@ -25,11 +27,20 @@ export default function FocusTimer() {
 
       <div className="flex gap-3 mb-8">
         <div className="flex items-center gap-1.5 bg-white/5 backdrop-blur-md border border-white/5 px-3 py-1.5 rounded-full text-[12px] text-gray-300">
-          <span className="text-green-400">🍃</span> No Breaks
+          {sessionType === "focus" ? (
+            <><span className="text-indigo-400">🎯</span> Focus Block</>
+          ) : (
+            <><span className="text-green-400">🍃</span> Break — recover</>
+          )}
         </div>
         <div className="flex items-center gap-1.5 bg-white/5 backdrop-blur-md border border-white/5 px-3 py-1.5 rounded-full text-[12px] text-gray-300">
-          <span className="text-purple-400">🎵</span> Lo-fi Beats
+          <span className="text-purple-400">🔁</span> 25/5 Cycle
         </div>
+        {interruptions > 0 && sessionType === "focus" && (
+          <div className="flex items-center gap-1.5 bg-white/5 backdrop-blur-md border border-white/5 px-3 py-1.5 rounded-full text-[12px] text-amber-300">
+            ⚡ {interruptions} interruption{interruptions > 1 ? "s" : ""}
+          </div>
+        )}
       </div>
 
       <div className="flex gap-3 mt-8">

@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import { Eye, EyeOff, ArrowRight, Sparkles, Lock, Mail, User } from "lucide-react";
 import PageTransition from "../../../shared/components/PageTransition";
+import { signup } from "../services/authService";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
@@ -24,12 +25,23 @@ export default function SignupPage() {
 
   const strength = password.length === 0 ? 0 : password.length < 6 ? 1 : password.length < 10 ? 2 : 3;
 
+  const [error, setError] = useState<string | null>(null);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 1400));
-    setLoading(false);
-    navigate("/login");
+    try {
+      await signup(username, email, password);
+      navigate("/login");
+    } catch (err: any) {
+      setError(
+        err?.response?.data?.detail ??
+          "Could not create your account. Check your connection and try again."
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -192,6 +204,13 @@ export default function SignupPage() {
                   )}
                 </AnimatePresence>
               </motion.div>
+
+              {/* Error */}
+              {error && (
+                <p style={{ margin: 0, fontSize: "12px", color: "#ef4444", fontWeight: 500 }}>
+                  {error}
+                </p>
+              )}
 
               {/* Submit */}
               <motion.div custom={6} variants={fadeUp} initial="hidden" animate="show" style={{ marginTop: "8px" }}>

@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import { Eye, EyeOff, Mail, Lock, Shield, Radio, Target } from "lucide-react";
 import PageTransition from "../../../shared/components/PageTransition";
+import { login } from "../services/authService";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -27,12 +28,23 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [focused, setFocused] = useState<string | null>(null);
 
+  const [error, setError] = useState<string | null>(null);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 1400));
-    setLoading(false);
-    navigate("/dashboard");
+    try {
+      await login(email, password);
+      navigate("/dashboard");
+    } catch (err: any) {
+      setError(
+        err?.response?.data?.detail ??
+          "Could not sign in. Check your connection and try again."
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -376,6 +388,13 @@ export default function LoginPage() {
                     Forgot password?
                   </button>
                 </motion.div>
+
+                {/* Error */}
+                {error && (
+                  <p style={{ margin: 0, fontSize: "12px", color: "#dc2626", fontWeight: 500 }}>
+                    {error}
+                  </p>
+                )}
 
                 {/* Submit */}
                 <motion.div custom={6} variants={fadeUp} initial="hidden" animate="show" style={{ marginTop: "4px" }}>

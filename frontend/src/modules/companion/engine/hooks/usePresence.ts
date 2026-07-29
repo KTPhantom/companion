@@ -1,8 +1,6 @@
 import {
-
   useFocusStore
-
-} from "@/modules/focus/store/focusStore";
+} from "../../../focus/store/focusStore";
 
 import {
 

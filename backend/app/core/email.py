@@ -6,14 +6,14 @@ from dotenv import load_dotenv
 load_dotenv()
 
 conf = ConnectionConfig(
-    MAIL_USERNAME=os.getenv("MAIL_USERNAME"),
-    MAIL_PASSWORD=os.getenv("MAIL_PASSWORD"),
-    MAIL_FROM=os.getenv("MAIL_FROM"),
+    MAIL_USERNAME=os.getenv("MAIL_USERNAME") or "dummy_username",
+    MAIL_PASSWORD=os.getenv("MAIL_PASSWORD") or "dummy_password",
+    MAIL_FROM=os.getenv("MAIL_FROM") or "dummy@example.com",
     MAIL_PORT=int(os.getenv("MAIL_PORT", 587)),
-    MAIL_SERVER=os.getenv("MAIL_SERVER"),
+    MAIL_SERVER=os.getenv("MAIL_SERVER") or "localhost",
     MAIL_STARTTLS=os.getenv("MAIL_STARTTLS", "True") == "True",
     MAIL_SSL_TLS=os.getenv("MAIL_SSL_TLS", "False") == "True",
-    USE_CREDENTIALS=True,
+    USE_CREDENTIALS=False if not os.getenv("MAIL_USERNAME") else True,
     VALIDATE_CERTS=True
 )
 

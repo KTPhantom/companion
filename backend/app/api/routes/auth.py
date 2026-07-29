@@ -1,24 +1,21 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 import os
 from sqlalchemy.orm import Session
-from app.db.database import SessionLocal
 from app.models.user import User
 from app.models.magic_token import MagicToken
 from app.schemas.user import UserCreate, UserLogin, UserResponse
 from app.schemas.auth import MagicLinkRequest, MagicLinkVerify
 from app.core.security import hash_password, verify_password, create_access_token
 from app.core.email import send_magic_link
+from app.dependencies.auth import get_db, get_current_user
 import secrets
 from datetime import datetime, timedelta
 
 router = APIRouter()
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+@router.get("/me", response_model=UserResponse)
+def read_current_user(current_user: User = Depends(get_current_user)):
+    return current_user
 
 @router.post("/signup", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 def signup(user: UserCreate, db: Session = Depends(get_db)):

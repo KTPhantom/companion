@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from app.db.database import SessionLocal
 from app.models.session import StudySession
 from app.models.user import User
 
@@ -11,6 +10,7 @@ from app.schemas.session import (
 )
 
 from app.dependencies.auth import (
+    get_db,
     get_current_user
 )
 
@@ -18,17 +18,6 @@ router = APIRouter(
     prefix="/sessions",
     tags=["Sessions"]
 )
-
-
-def get_db():
-
-    db = SessionLocal()
-
-    try:
-        yield db
-
-    finally:
-        db.close()
 
 
 @router.post(
@@ -48,6 +37,8 @@ def create_session(
         subject=session.subject,
 
         duration=session.duration,
+
+        focus_score=session.focus_score,
 
         completed=True
     )

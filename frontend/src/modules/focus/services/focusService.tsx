@@ -1,31 +1,14 @@
-import axios from "axios";
+import { api } from "../../../shared/api";
 
-const API =
-  "http://127.0.0.1:8000";
-
-export const createSession =
-  async (
-    token: string,
-    subject: string,
-    duration: number
-  ) => {
-
-    const response = await axios.post(
-
-      `${API}/sessions/create`,
-
-      {
-        subject,
-        duration
-      },
-
-      {
-        headers: {
-          Authorization:
-            `Bearer ${token}`
-        }
-      }
-    );
-
-    return response.data;
+export const createSession = async (
+  subject: string,
+  duration: number,
+  focusScore: number = 100
+) => {
+  const response = await api.post("/sessions/create", {
+    subject,
+    duration,
+    focus_score: focusScore,
+  });
+  return response.data;
 };

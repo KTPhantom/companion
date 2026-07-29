@@ -1,22 +1,6 @@
-import axios from "axios";
+import { api } from "../../../shared/api";
 
-const API =
-  "http://127.0.0.1:8000";
-
-export const fetchSessions =
-  async (token: string) => {
-
-    const response = await axios.get(
-
-      `${API}/sessions/my-sessions`,
-
-      {
-        headers: {
-          Authorization:
-            `Bearer ${token}`
-        }
-      }
-    );
-
-    return response.data;
+export const fetchSessions = async () => {
+  const response = await api.get("/sessions/my-sessions");
+  return response.data;
 };
