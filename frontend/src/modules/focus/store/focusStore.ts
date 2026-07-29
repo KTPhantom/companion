@@ -9,6 +9,9 @@ interface FocusState {
   // Pauses during a focus block = interruptions. They feed the real focus
   // score (docs/research-foundation.md #10, #12).
   interruptions: number;
+  /** Set when a focus block finishes, so the check-in can be offered. */
+  pendingCheckIn: boolean;
+  dismissCheckIn: () => void;
   setSubject: (subject: string) => void;
   startTimer: () => void;
   pauseTimer: () => void;
@@ -28,6 +31,9 @@ export const useFocusStore = create<FocusState>((set) => ({
   sessionType: "focus",
   subject: "Deep Work",
   interruptions: 0,
+  pendingCheckIn: false,
+
+  dismissCheckIn: () => set({ pendingCheckIn: false }),
 
   setSubject: (subject) => set({ subject }),
 
@@ -52,14 +58,16 @@ export const useFocusStore = create<FocusState>((set) => ({
       interruptions: 0
     }),
 
-  // Break auto-starts when a focus block completes.
+  // Break auto-starts when a focus block completes, and that completion is
+  // the moment to ask how it felt.
   startBreak: () =>
     set({
       sessionType: "break",
       totalTime: BREAK_DURATION,
       timeLeft: BREAK_DURATION,
       isRunning: true,
-      interruptions: 0
+      interruptions: 0,
+      pendingCheckIn: true
     }),
 
   // After the break, arm the next focus block but wait for the user to start.

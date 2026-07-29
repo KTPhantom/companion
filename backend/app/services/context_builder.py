@@ -26,7 +26,40 @@ def _presence_lines(presence: dict | None):
     return lines
 
 
-def build_context(message: str, analytics: dict, memories: dict, presence: dict | None = None):
+def _wellbeing_lines(wellbeing: dict | None):
+    """What the person has said about how they feel — never inferred."""
+    if not wellbeing or not wellbeing.get("check_ins"):
+        return ["- They haven't shared how sessions feel yet."]
+
+    lines = [
+        f"- Self-reported energy (1 drained - 5 energised): {wellbeing.get('avg_energy')}",
+        f"- Self-reported focus quality (1 scattered - 5 deep): "
+        f"{wellbeing.get('avg_focus_quality')}",
+    ]
+    if wellbeing.get("energy_trend"):
+        lines.append(f"- Energy trend: {wellbeing['energy_trend']}")
+    if wellbeing.get("lowest_energy_hour") is not None:
+        lines.append(
+            f"- Energy is usually lowest {_format_hour(wellbeing['lowest_energy_hour'])}"
+        )
+    if wellbeing.get("consecutive_low_energy", 0) >= 3:
+        lines.append(
+            f"- IMPORTANT: {wellbeing['consecutive_low_energy']} low-energy check-ins "
+            "in a row. Prioritise rest and lighter goals over pushing harder."
+        )
+    if wellbeing.get("recent_notes"):
+        notes = "; ".join(f'"{n}"' for n in wellbeing["recent_notes"])
+        lines.append(f"- Their recent words: {notes}")
+    return lines
+
+
+def build_context(
+    message: str,
+    analytics: dict,
+    memories: dict,
+    presence: dict | None = None,
+    wellbeing: dict | None = None,
+):
     """Assemble everything the companion knows about this person into one prompt.
 
     Combines live behavioral analytics (computed from sessions) with long-term
@@ -61,6 +94,9 @@ def build_context(message: str, analytics: dict, memories: dict, presence: dict 
 
 ATTENTION PATTERNS (captured while they work):
 {chr(10).join(_presence_lines(presence))}
+
+WELLBEING (their own words, not inferred):
+{chr(10).join(_wellbeing_lines(wellbeing))}
 
 LONG-TERM MEMORY (observations persisted across sessions):
 {chr(10).join(memory_lines)}

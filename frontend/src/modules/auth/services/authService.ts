@@ -20,9 +20,25 @@ export const signup = async (
   return response.data;
 };
 
+export const requestMagicLink = async (email: string) => {
+  const response = await api.post("/auth/request-magic-link", { email });
+  return response.data;
+};
+
 export const fetchMe = async () => {
   const response = await api.get("/auth/me");
-  return response.data as { id: number; username: string; email: string };
+  return response.data as {
+    id: number;
+    username: string;
+    email: string;
+    timezone: string;
+    daily_goal: number;
+  };
+};
+
+export const updateDailyGoal = async (dailyGoal: number) => {
+  const response = await api.patch("/auth/me/preferences", { daily_goal: dailyGoal });
+  return response.data;
 };
 
 export const logout = () => {

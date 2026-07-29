@@ -3,12 +3,13 @@ import os
 from sqlalchemy.orm import Session
 from app.models.user import User
 from app.models.magic_token import MagicToken
-from app.schemas.user import UserCreate, UserLogin, UserResponse
+from app.schemas.user import UserCreate, UserLogin, UserResponse, UserPreferences
 from app.schemas.auth import MagicLinkRequest, MagicLinkVerify
 from app.core.security import hash_password, verify_password, create_access_token
 from app.core.email import send_magic_link
 from app.dependencies.auth import get_db, get_current_user
 from app.core.time import utcnow
+from app.core.rate_limit import rate_limit
 import secrets
 from datetime import timedelta
 
@@ -18,7 +19,24 @@ router = APIRouter()
 def read_current_user(current_user: User = Depends(get_current_user)):
     return current_user
 
-@router.post("/signup", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+
+@router.patch("/me/preferences", response_model=UserResponse)
+def update_preferences(
+    prefs: UserPreferences,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    current_user.daily_goal = prefs.daily_goal
+    db.commit()
+    db.refresh(current_user)
+    return current_user
+
+@router.post(
+    "/signup",
+    response_model=UserResponse,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(rate_limit("signup", limit=5, window_seconds=3600))],
+)
 def signup(user: UserCreate, db: Session = Depends(get_db)):
     db_user = db.query(User).filter(User.email == user.email).first()
     if db_user:
@@ -39,7 +57,11 @@ def signup(user: UserCreate, db: Session = Depends(get_db)):
     db.refresh(new_user)
     return new_user
 
-@router.post("/login")
+@router.post(
+    "/login",
+    # Password guessing is otherwise unbounded.
+    dependencies=[Depends(rate_limit("login", limit=10, window_seconds=300))],
+)
 def login(user: UserLogin, db: Session = Depends(get_db)):
     db_user = db.query(User).filter(User.email == user.email).first()
     if not db_user or not verify_password(user.password, db_user.hashed_password):
@@ -48,7 +70,11 @@ def login(user: UserLogin, db: Session = Depends(get_db)):
     access_token = create_access_token(data={"sub": db_user.email})
     return {"access_token": access_token, "token_type": "bearer"}
 
-@router.post("/request-magic-link")
+@router.post(
+    "/request-magic-link",
+    # Each request sends a real email; without a cap this is a spam relay.
+    dependencies=[Depends(rate_limit("magic_link", limit=5, window_seconds=900))],
+)
 async def request_magic_link(req: MagicLinkRequest, db: Session = Depends(get_db)):
     frontend_url = os.getenv("FRONTEND_URL", "http://localhost:5173")
     token = secrets.token_urlsafe(32)

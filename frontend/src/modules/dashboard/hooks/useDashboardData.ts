@@ -53,6 +53,22 @@ export const useDashboardData = () => {
       (s: any) =>
         s.started_at && new Date(s.started_at).toDateString() === today
     );
+
+    // Last seven days, oldest first, for the sidebar activity strip.
+    const activeDays = new Set(
+      sessions
+        .filter((s: any) => s.started_at)
+        .map((s: any) => new Date(s.started_at).toDateString())
+    );
+    const weekActivity = Array.from({ length: 7 }, (_, i) => {
+      const day = new Date();
+      day.setDate(day.getDate() - (6 - i));
+      return {
+        label: day.toLocaleDateString(undefined, { weekday: "narrow" }),
+        active: activeDays.has(day.toDateString()),
+        isToday: i === 6
+      };
+    });
     const streak = calculateStreak(sessions);
     const focusScore = calculateFocusScore(sessions);
     const topSubject = getTopSubject(sessions);
@@ -64,6 +80,7 @@ export const useDashboardData = () => {
       totalMinutes,
       totalSessions,
       todaySessions,
+      weekActivity,
       streak,
       focusScore,
       topSubject,

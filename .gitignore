@@ -41,3 +41,6 @@ yarn-error.log*
 
 # Alembic scratch/baseline artifacts
 *.db-journal
+
+# Stale local SQLite (the real database is Postgres)
+*.db

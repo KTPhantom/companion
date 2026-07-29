@@ -2,7 +2,7 @@ import {
   LayoutGrid,
   Clock,
   Calendar,
-  CheckSquare,
+
   BarChart2,
   Sparkles,
   MessageSquare,
@@ -20,17 +20,23 @@ import {
   Code,
   SquareSigma,
   ChevronDown,
-  Edit3
+  LogOut,
+
 } from "lucide-react";
 import { motion } from "framer-motion";
-import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { logout, updateDailyGoal } from "../../auth/services/authService";
 import FocusTimer from "../../focus/components/FocusTimer";
+import SubjectPicker from "../../focus/components/SubjectPicker";
 import { PresenceBar } from "../../presence/components/PresenceBar";
+import SessionCheckIn from "../../wellbeing/components/SessionCheckIn";
+import { useFocusStore } from "../../focus/store/focusStore";
 import {
   useDashboardData
 } from "../hooks/useDashboardData";
 
-const DAILY_GOAL = 6;
+const DEFAULT_DAILY_GOAL = 6;
 
 function timeGreeting() {
   const hour = new Date().getHours();
@@ -41,6 +47,7 @@ function timeGreeting() {
 }
 
 export default function DashboardPage() {
+  const navigate = useNavigate();
   const {
     sessions,
     user,
@@ -48,6 +55,7 @@ export default function DashboardPage() {
     totalMinutes,
     totalSessions,
     todaySessions,
+    weekActivity,
     streak,
     focusScore,
     topSubject,
@@ -56,9 +64,29 @@ export default function DashboardPage() {
     consistencyLevel
   } = useDashboardData();
 
+  const { pendingCheckIn, dismissCheckIn } = useFocusStore();
+  const [dailyGoal, setDailyGoal] = useState(DEFAULT_DAILY_GOAL);
+  const [editingGoal, setEditingGoal] = useState(false);
+
+  useEffect(() => {
+    if (user?.daily_goal) setDailyGoal(user.daily_goal);
+  }, [user?.daily_goal]);
+
+  const commitGoal = (value: number) => {
+    const next = Math.max(1, Math.min(20, value));
+    setDailyGoal(next);
+    setEditingGoal(false);
+    updateDailyGoal(next).catch((err) => console.error("Goal not saved", err));
+  };
+
   const displayName = user?.username ?? "there";
-  const goalDone = Math.min(todaySessions.length, DAILY_GOAL);
-  const goalRingOffset = 226 - (226 * goalDone) / DAILY_GOAL;
+  const goalDone = Math.min(todaySessions.length, dailyGoal);
+  const goalRingOffset = 226 - (226 * goalDone) / dailyGoal;
+
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  };
 
   if (loading) {
     return (
@@ -69,7 +97,8 @@ export default function DashboardPage() {
   }
   return (
     <div className="flex h-screen bg-[#070712] text-white font-sans overflow-hidden">
-      
+      <SessionCheckIn open={pendingCheckIn} onClose={dismissCheckIn} />
+
       {/* ─── SIDEBAR ─── */}
       <aside className="w-[260px] bg-[#0c0d1a] border-r border-white/5 flex flex-col hidden lg:flex shrink-0">
         <div className="p-6 pb-2">
@@ -81,14 +110,10 @@ export default function DashboardPage() {
           </div>
         </div>
 
+        {/* Only routes that exist. Links to unbuilt screens are marked
+            "Soon" rather than silently doing nothing when clicked. */}
         <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
           <NavItem icon={<LayoutGrid size={18} />} label="Dashboard" active />
-          <NavItem icon={<Clock size={18} />} label="Focus" />
-          <NavItem icon={<Calendar size={18} />} label="Sessions" />
-          <NavItem icon={<CheckSquare size={18} />} label="Tasks" />
-          <div className="my-4 border-t border-white/5 mx-2" />
-          <NavItem icon={<BarChart2 size={18} />} label="Analytics" />
-          <NavItem icon={<Sparkles size={18} />} label="Insights" />
           <Link to="/companion" className="flex items-center justify-between px-3 py-2.5 rounded-xl text-gray-400 hover:text-white hover:bg-white/5 cursor-pointer transition">
             <div className="flex items-center gap-3">
               <MessageSquare size={18} />
@@ -96,7 +121,12 @@ export default function DashboardPage() {
             </div>
             <span className="text-[10px] font-bold bg-indigo-500/20 text-indigo-400 px-1.5 py-0.5 rounded-md">AI</span>
           </Link>
-          <NavItem icon={<Settings size={18} />} label="Settings" />
+
+          <div className="my-4 border-t border-white/5 mx-2" />
+          <p className="px-3 pb-1 text-[10px] font-bold tracking-widest text-gray-600 uppercase">Coming soon</p>
+          <NavItem icon={<Calendar size={18} />} label="Sessions" soon />
+          <NavItem icon={<BarChart2 size={18} />} label="Analytics" soon />
+          <NavItem icon={<Settings size={18} />} label="Settings" soon />
         </nav>
 
         {/* 7 Day Streak Mini Card */}
@@ -110,31 +140,39 @@ export default function DashboardPage() {
               </div>
             </div>
             <div className="flex justify-between items-center px-1">
-              {['M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
+              {weekActivity.map((day, i) => (
                 <div key={i} className="flex flex-col items-center gap-1.5">
-                  <div className="w-3.5 h-3.5 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]" />
-                  <span className="text-[9px] text-gray-500 font-medium">{d}</span>
+                  <div
+                    className={
+                      day.active
+                        ? "w-3.5 h-3.5 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]"
+                        : `w-3.5 h-3.5 rounded-full border ${day.isToday ? "border-indigo-400/60" : "border-gray-600"}`
+                    }
+                  />
+                  <span className="text-[9px] text-gray-500 font-medium">{day.label}</span>
                 </div>
               ))}
-              <div className="flex flex-col items-center gap-1.5">
-                <div className="w-3.5 h-3.5 rounded-full border border-gray-600" />
-                <span className="text-[9px] text-gray-500 font-medium">S</span>
-              </div>
             </div>
           </div>
         </div>
 
         {/* User Profile */}
         <div className="p-4 border-t border-white/5">
-          <div className="flex items-center gap-3 px-2 py-1 cursor-pointer">
-            <div className="w-9 h-9 rounded-full bg-gray-700 overflow-hidden shrink-0">
-              <img src="https://i.pravatar.cc/150?u=a042581f4e29026704d" alt="Profile" className="w-full h-full object-cover" />
+          <div className="flex items-center gap-3 px-2 py-1">
+            <div className="w-9 h-9 rounded-full bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center shrink-0 text-indigo-300 text-[13px] font-bold">
+              {displayName.slice(0, 1).toUpperCase()}
             </div>
-            <div className="flex-1">
-              <p className="text-[13px] font-semibold text-white leading-tight">{displayName}</p>
-              <p className="text-[11px] text-indigo-400">{user?.email ?? ""}</p>
+            <div className="flex-1 min-w-0">
+              <p className="text-[13px] font-semibold text-white leading-tight truncate">{displayName}</p>
+              <p className="text-[11px] text-gray-500 truncate">{user?.email ?? ""}</p>
             </div>
-            <ChevronDown size={14} className="text-gray-500" />
+            <button
+              onClick={handleLogout}
+              title="Sign out"
+              className="text-gray-500 hover:text-rose-400 transition p-1.5 rounded-lg hover:bg-white/5"
+            >
+              <LogOut size={15} />
+            </button>
           </div>
         </div>
       </aside>
@@ -152,19 +190,13 @@ export default function DashboardPage() {
               Stay consistent. Stay focused. Your future self is grateful.
             </p>
           </div>
-          <div className="flex items-center gap-5">
-            <button className="text-gray-400 hover:text-white transition"><Search size={18} /></button>
-            <button className="text-gray-400 hover:text-white transition relative">
-              <Bell size={18} />
-              <div className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-indigo-500 rounded-full border-2 border-[#070712] flex items-center justify-center text-[8px] font-bold">3</div>
-            </button>
-            <div className="w-9 h-9 rounded-full bg-gray-700 overflow-hidden cursor-pointer ml-1">
-              <img src="https://i.pravatar.cc/150?u=a042581f4e29026704d" alt="Profile" className="w-full h-full object-cover" />
-            </div>
-            <div className="flex items-center gap-2 bg-[#121427] border border-white/5 rounded-xl px-3 py-2 cursor-pointer text-[13px] font-medium ml-2">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 bg-[#121427] border border-white/5 rounded-xl px-3 py-2 text-[13px] font-medium text-gray-300">
               <CalendarDays size={14} className="text-gray-400" />
-              <span>Today</span>
-              <ChevronDown size={14} className="text-gray-500 ml-1" />
+              <span>{new Date().toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" })}</span>
+            </div>
+            <div className="w-9 h-9 rounded-full bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-300 text-[13px] font-bold">
+              {displayName.slice(0, 1).toUpperCase()}
             </div>
           </div>
         </header>
@@ -188,8 +220,7 @@ export default function DashboardPage() {
                   </div>
                   
                   <div className="flex items-center gap-3 mb-1">
-                    <span className="text-gray-300 text-[14px]">Deep Work Time</span>
-                    <button className="bg-white/5 hover:bg-white/10 p-1.5 rounded-full transition text-gray-400"><Edit3 size={12} /></button>
+                    <SubjectPicker />
                   </div>
                   
                   <FocusTimer />
@@ -200,14 +231,38 @@ export default function DashboardPage() {
                   <div></div>
 
                   <div className="flex flex-col items-center mr-16">
-                    <p className="text-[12px] text-gray-400 mb-3">Today's Goal</p>
+                    <button
+                      onClick={() => setEditingGoal((v) => !v)}
+                      className="text-[12px] text-gray-400 mb-3 hover:text-indigo-300 transition"
+                      title="Set your own daily goal"
+                    >
+                      Today's Goal ✎
+                    </button>
+
+                    {editingGoal && (
+                      <div className="flex items-center gap-1.5 mb-3 bg-[#121427] border border-white/10 rounded-xl p-1.5">
+                        {[3, 4, 6, 8, 10].map((n) => (
+                          <button
+                            key={n}
+                            onClick={() => commitGoal(n)}
+                            className={`w-7 h-7 rounded-lg text-[12px] font-semibold transition ${
+                              n === dailyGoal
+                                ? "bg-indigo-600 text-white"
+                                : "text-gray-400 hover:bg-white/5"
+                            }`}
+                          >
+                            {n}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                     <div className="relative w-20 h-20 flex items-center justify-center">
                       <svg className="w-full h-full transform -rotate-90">
                         <circle cx="40" cy="40" r="36" fill="transparent" stroke="rgba(255,255,255,0.05)" strokeWidth="6" />
                         <circle cx="40" cy="40" r="36" fill="transparent" stroke="#6366f1" strokeWidth="6" strokeDasharray="226" strokeDashoffset={goalRingOffset} strokeLinecap="round" />
                       </svg>
                       <div className="absolute inset-0 flex items-center justify-center">
-                        <span className="text-xl font-bold text-white">{goalDone}<span className="text-gray-500">/{DAILY_GOAL}</span></span>
+                        <span className="text-xl font-bold text-white">{goalDone}<span className="text-gray-500">/{dailyGoal}</span></span>
                       </div>
                     </div>
                     <p className="text-[11px] text-gray-400 mt-3">Sessions Completed</p>
@@ -226,10 +281,10 @@ export default function DashboardPage() {
               </div>
 
               <div className="grid grid-cols-2 gap-px bg-white/5 flex-1 rounded-2xl overflow-hidden border border-white/5">
-                <StatCell icon={<Clock size={16} className="text-indigo-400" />} label="Study Time" value={`${totalMinutes}m`} trend="↑ 12%" />
-                <StatCell icon={<Target size={16} className="text-orange-400" />} label="Focus Score" value={`${focusScore}%`} trend="↑ 8%" />
-                <StatCell icon={<CalendarDays size={16} className="text-blue-400" />} label="Sessions" value={totalSessions} trend="↑ 3" />
-                <StatCell icon={<Flame size={16} className="text-rose-400" />} label="Streak" value={`${streak} days`} sub="Keep going! 🔥" />
+                <StatCell icon={<Clock size={16} className="text-indigo-400" />} label="Study Time" value={`${totalMinutes}m`} sub={`across ${totalSessions} session${totalSessions === 1 ? "" : "s"}`} />
+                <StatCell icon={<Target size={16} className="text-orange-400" />} label="Focus Score" value={`${focusScore}%`} sub={focusScore ? "measured from interruptions" : "no sessions yet"} />
+                <StatCell icon={<CalendarDays size={16} className="text-blue-400" />} label="Sessions" value={totalSessions} sub={`${todaySessions.length} today`} />
+                <StatCell icon={<Flame size={16} className="text-rose-400" />} label="Streak" value={`${streak} day${streak === 1 ? "" : "s"}`} sub={streak > 0 ? "Keep going! 🔥" : "Start today"} />
               </div>
             </div>
           </div>
@@ -356,9 +411,18 @@ export default function DashboardPage() {
 
 // ─── HELPER COMPONENTS ───
 
-function NavItem({ icon, label, active = false }: { icon: React.ReactNode, label: string, active?: boolean }) {
+function NavItem({ icon, label, active = false, soon = false }: { icon: React.ReactNode, label: string, active?: boolean, soon?: boolean }) {
+  const base = "flex items-center gap-3 px-3 py-2.5 rounded-xl transition";
+  if (soon) {
+    return (
+      <div className={`${base} text-gray-600 cursor-default`} title="Not built yet">
+        {icon}
+        <span className="text-[13px]">{label}</span>
+      </div>
+    );
+  }
   return (
-    <div className={`flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition ${active ? 'bg-indigo-600/10 text-indigo-400 font-medium' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}>
+    <div className={`${base} cursor-pointer ${active ? 'bg-indigo-600/10 text-indigo-400 font-medium' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}>
       {icon}
       <span className="text-[13px]">{label}</span>
     </div>

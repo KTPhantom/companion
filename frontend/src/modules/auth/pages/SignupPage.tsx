@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Eye, EyeOff, ArrowRight, Sparkles, Lock, Mail, User } from "lucide-react";
 import PageTransition from "../../../shared/components/PageTransition";
 import { signup } from "../services/authService";
+import { errorMessage } from "../../../shared/api";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
@@ -34,11 +35,8 @@ export default function SignupPage() {
     try {
       await signup(username, email, password);
       navigate("/login");
-    } catch (err: any) {
-      setError(
-        err?.response?.data?.detail ??
-          "Could not create your account. Check your connection and try again."
-      );
+    } catch (err) {
+      setError(errorMessage(err, "Could not create your account. Please try again."));
     } finally {
       setLoading(false);
     }
