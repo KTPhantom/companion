@@ -1,6 +1,8 @@
 from sqlalchemy import Column, Integer, String, DateTime
+
 from app.db.database import Base
-from datetime import datetime
+from app.core.time import utcnow, DEFAULT_TIMEZONE
+
 
 class User(Base):
     __tablename__ = "users"
@@ -13,4 +15,9 @@ class User(Base):
 
     hashed_password = Column(String)
 
-    created_at = Column(DateTime, default=datetime.utcnow)
+    # IANA zone (e.g. "Asia/Kolkata"). Day and hour bucketing happens here,
+    # not in UTC — see app/core/time.py.
+    timezone = Column(String, default=DEFAULT_TIMEZONE, nullable=False,
+                      server_default=DEFAULT_TIMEZONE)
+
+    created_at = Column(DateTime(timezone=True), default=utcnow)

@@ -38,3 +38,6 @@ yarn-error.log*
 
 # Frontend related
 .agent/
+
+# Alembic scratch/baseline artifacts
+*.db-journal

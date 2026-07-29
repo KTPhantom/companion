@@ -15,6 +15,9 @@ dependencies = [
     "fastapi-mail>=1.4.1",
     "psycopg2-binary>=2.9.12",
     "openai>=2.37.0",
+    "alembic>=1.18.5",
+    "pytest>=9.1.1",
+    "tzdata>=2026.3",
 ]
 
 [tool.uv]

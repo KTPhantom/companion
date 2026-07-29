@@ -24,7 +24,7 @@ def chat_with_companion(
     # Everything the companion knows about this person: long-term memories
     # plus the behavioral profile computed live from their sessions.
     memories = get_user_memories(db, current_user.id)
-    analytics = get_user_analytics(db, current_user.id)
+    analytics = get_user_analytics(db, current_user.id, current_user.timezone)
 
     # Conversation continuity comes from the server-side record, so the
     # companion remembers even across devices and refreshes.

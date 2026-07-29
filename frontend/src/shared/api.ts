@@ -10,6 +10,11 @@ api.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  // The backend buckets days and peak hours in the user's own timezone.
+  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  if (tz) {
+    config.headers["X-Timezone"] = tz;
+  }
   return config;
 });
 

@@ -1,8 +1,7 @@
-from datetime import datetime
-
 from sqlalchemy import Column, Integer, String, Text, ForeignKey, DateTime
 
 from app.db.database import Base
+from app.core.time import utcnow
 
 
 class ChatMessage(Base):
@@ -19,4 +18,4 @@ class ChatMessage(Base):
 
     content = Column(Text)
 
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=utcnow)

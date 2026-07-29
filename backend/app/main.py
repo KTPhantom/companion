@@ -3,19 +3,14 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.db.database import Base, engine
-
-# Models must be imported so create_all sees every table.
-from app.models.user import User  # noqa: F401
-from app.models.magic_token import MagicToken  # noqa: F401
-from app.models.session import StudySession  # noqa: F401
-from app.models.user_memory import UserMemory  # noqa: F401
-from app.models.chat_message import ChatMessage  # noqa: F401
+# Registers every model on Base.metadata (used by Alembic autogenerate).
+import app.db.base  # noqa: F401
 
 from app.api.routes import auth, memory, companion
 from app.api.routes.session import router as session_router
 
-Base.metadata.create_all(bind=engine)
+# Schema is owned by Alembic, not create_all(). Apply changes with:
+#   alembic upgrade head
 
 app = FastAPI(
     title="Companion OS",

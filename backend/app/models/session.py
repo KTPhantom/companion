@@ -9,9 +9,8 @@ from sqlalchemy import (
 
 from sqlalchemy.orm import relationship
 
-from datetime import datetime
-
 from app.db.database import Base
+from app.core.time import utcnow
 
 
 class StudySession(Base):
@@ -34,10 +33,10 @@ class StudySession(Base):
     completed = Column(Boolean, default=False)
 
     started_at = Column(
-        DateTime,
-        default=datetime.utcnow
+        DateTime(timezone=True),
+        default=utcnow
     )
 
-    ended_at = Column(DateTime)
+    ended_at = Column(DateTime(timezone=True))
 
     user = relationship("User")

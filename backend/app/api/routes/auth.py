@@ -8,8 +8,9 @@ from app.schemas.auth import MagicLinkRequest, MagicLinkVerify
 from app.core.security import hash_password, verify_password, create_access_token
 from app.core.email import send_magic_link
 from app.dependencies.auth import get_db, get_current_user
+from app.core.time import utcnow
 import secrets
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 router = APIRouter()
 
@@ -51,7 +52,7 @@ def login(user: UserLogin, db: Session = Depends(get_db)):
 async def request_magic_link(req: MagicLinkRequest, db: Session = Depends(get_db)):
     frontend_url = os.getenv("FRONTEND_URL", "http://localhost:5173")
     token = secrets.token_urlsafe(32)
-    expires_at = datetime.utcnow() + timedelta(minutes=15)
+    expires_at = utcnow() + timedelta(minutes=15)
     
     magic_token = MagicToken(
         token=token,
@@ -78,7 +79,7 @@ def verify_magic_link(req: MagicLinkVerify, db: Session = Depends(get_db)):
     magic_token = db.query(MagicToken).filter(
         MagicToken.token == req.token,
         MagicToken.used == False,
-        MagicToken.expires_at > datetime.utcnow()
+        MagicToken.expires_at > utcnow()
     ).first()
     
     if not magic_token:
