@@ -2,6 +2,7 @@ import { useEffect } from "react";
 
 import { useFocusStore } from "../store/focusStore";
 import { createSession } from "../services/focusService";
+import { recordPresenceEvent } from "../../presence/services/presenceService";
 
 export const useFocusTimer = () => {
   const {
@@ -33,6 +34,7 @@ export const useFocusTimer = () => {
           } catch (error) {
             console.error("Session save failed", error);
           }
+          recordPresenceEvent({ event_type: "focus_complete", subject });
           startBreak();
         } else {
           startFocus();

@@ -6,7 +6,27 @@ def _format_hour(hour):
     return f"around {display}:00 {suffix}"
 
 
-def build_context(message: str, analytics: dict, memories: dict):
+def _presence_lines(presence: dict | None):
+    if not presence or not presence.get("total_focus_sessions"):
+        return ["- No attention data captured yet."]
+
+    lines = [
+        f"- Distractions per session: {presence.get('distractions_per_session', 0)}",
+        f"- Sessions completed vs abandoned: "
+        f"{presence.get('completed_sessions', 0)} / {presence.get('abandoned_sessions', 0)}",
+    ]
+    if presence.get("most_distracted_hour") is not None:
+        lines.append(
+            f"- Most distraction-prone hour: {_format_hour(presence['most_distracted_hour'])}"
+        )
+    if presence.get("avg_away_seconds"):
+        lines.append(
+            f"- Average time away when they drift: {presence['avg_away_seconds']}s"
+        )
+    return lines
+
+
+def build_context(message: str, analytics: dict, memories: dict, presence: dict | None = None):
     """Assemble everything the companion knows about this person into one prompt.
 
     Combines live behavioral analytics (computed from sessions) with long-term
@@ -38,6 +58,9 @@ def build_context(message: str, analytics: dict, memories: dict):
 
     return f"""BEHAVIORAL PROFILE (computed from their real sessions):
 {chr(10).join(profile_lines)}
+
+ATTENTION PATTERNS (captured while they work):
+{chr(10).join(_presence_lines(presence))}
 
 LONG-TERM MEMORY (observations persisted across sessions):
 {chr(10).join(memory_lines)}

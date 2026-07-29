@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from app.dependencies.auth import get_db, get_current_user
 from app.crud.memory import get_user_memories
 from app.crud.analytics import get_user_analytics
+from app.crud.presence import get_presence_summary
 from app.models.chat_message import ChatMessage
 from app.schemas.companion import ChatRequest, ChatResponse
 from app.services.ai_service import generate_ai_response
@@ -25,6 +26,7 @@ def chat_with_companion(
     # plus the behavioral profile computed live from their sessions.
     memories = get_user_memories(db, current_user.id)
     analytics = get_user_analytics(db, current_user.id, current_user.timezone)
+    presence = get_presence_summary(db, current_user.id, current_user.timezone)
 
     # Conversation continuity comes from the server-side record, so the
     # companion remembers even across devices and refreshes.
@@ -36,7 +38,7 @@ def chat_with_companion(
         for m in reversed(recent)
     ]
 
-    context = build_context(data.message, analytics, memories)
+    context = build_context(data.message, analytics, memories, presence)
 
     try:
         reply = generate_ai_response(context, history)

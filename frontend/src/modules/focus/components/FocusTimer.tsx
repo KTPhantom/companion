@@ -2,19 +2,31 @@ import { useFocusStore } from "../store/focusStore";
 import { useFocusTimer } from "../hooks/useFocusTimer";
 import { motion } from "framer-motion";
 import { Play, Pause, RotateCcw } from "lucide-react";
+import { recordPresenceEvent } from "../../presence/services/presenceService";
 
 export default function FocusTimer() {
   useFocusTimer();
 
   const {
     timeLeft,
+    totalTime,
     isRunning,
     sessionType,
     interruptions,
+    subject,
     startTimer,
     pauseTimer,
     resetTimer
   } = useFocusStore();
+
+  // Resetting a block that was under way is an abandon, which the presence
+  // summary compares against completions.
+  const handleReset = () => {
+    if (sessionType === "focus" && timeLeft < totalTime) {
+      recordPresenceEvent({ event_type: "focus_abandon", subject });
+    }
+    resetTimer();
+  };
 
   const minutes = Math.floor(timeLeft / 60);
   const seconds = timeLeft % 60;
@@ -65,7 +77,7 @@ export default function FocusTimer() {
         )}
 
         <motion.button
-          onClick={resetTimer}
+          onClick={handleReset}
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           className="bg-white/10 backdrop-blur-md border border-white/10 text-white px-6 py-3.5 rounded-xl font-bold text-[14px] hover:bg-white/20 transition flex items-center gap-2"

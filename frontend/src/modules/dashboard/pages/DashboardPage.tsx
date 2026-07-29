@@ -25,7 +25,7 @@ import {
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import FocusTimer from "../../focus/components/FocusTimer";
-import { PresenceBar } from "../../companion/engine/components/PresenceBar";
+import { PresenceBar } from "../../presence/components/PresenceBar";
 import {
   useDashboardData
 } from "../hooks/useDashboardData";
@@ -306,7 +306,7 @@ export default function DashboardPage() {
                 </Link>
               </div>
             </div>
-            <PresenceBar />
+            <PresenceBar streak={streak} />
           </div>
 
           {/* ADAPTIVE INTELLIGENCE ROW */}

@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 # Registers every model on Base.metadata (used by Alembic autogenerate).
 import app.db.base  # noqa: F401
 
-from app.api.routes import auth, memory, companion
+from app.api.routes import auth, memory, companion, presence
 from app.api.routes.session import router as session_router
 
 # Schema is owned by Alembic, not create_all(). Apply changes with:
@@ -37,6 +37,7 @@ app.include_router(auth.router, prefix="/api/auth", tags=["Auth"])
 app.include_router(session_router, prefix="/api")
 app.include_router(memory.router, prefix="/api/memory", tags=["Memory"])
 app.include_router(companion.router, prefix="/api/companion", tags=["Companion"])
+app.include_router(presence.router, prefix="/api/presence", tags=["Presence"])
 
 
 @app.get("/")
